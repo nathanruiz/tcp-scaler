@@ -1,7 +1,7 @@
 """A TCP load-balancer that create backend EC2 instances on-demand.
 
 Usage:
-  tcp-scaler <instance-id>
+  tcp-scaler <instance-id> <lock-file>
 """
 import boto3
 import docopt
@@ -9,6 +9,7 @@ import dotenv
 import os
 import sys
 import time
+import fcntl
 
 __version__ = '0.0.1'
 
@@ -19,10 +20,18 @@ def main():
     args = docopt.docopt(__doc__, version=__version__)
 
     instance_id = args["<instance-id>"]
+    lock_file_name = args["<lock-file>"]
+
     instance = ec2.Instance(instance_id)
 
     while True:
-        should_be_running = False
+        with open(lock_file_name, "w") as lock_file:
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX|fcntl.LOCK_NB)
+                should_be_running = False
+            except OSError:
+                should_be_running = True
+
         instance.reload()
         state = instance.state["Name"]
 
