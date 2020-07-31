@@ -24,6 +24,8 @@ def main():
 
     instance = ec2.Instance(instance_id)
 
+    print(f"Started instance manager for {instance_id}")
+
     while True:
         with open(lock_file_name, "w") as lock_file:
             try:
