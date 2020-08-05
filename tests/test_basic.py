@@ -9,9 +9,6 @@ def test_import():
     libraries required by tcp_scaler are install, and there are no syntax errors
     in the files loaded by the module.
     """
-    # Required so that boto3 doesn't complain.
-    os.environ["AWS_DEFAULT_REGION"] = "dummy-region"
-
     import tcp_scaler
     assert hasattr(tcp_scaler, "main")
 

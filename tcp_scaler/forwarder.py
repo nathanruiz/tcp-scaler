@@ -1,7 +1,10 @@
 """A TCP load-balancer that create backend EC2 instances on-demand.
 
 Usage:
-  forward-connection <instance-id> <lock-file> <backend-port>
+  forward-connection [-v] <instance-id> <lock-file> <backend-port>
+
+Options:
+  -v --verbose  Write extra state information to the console
 """
 import boto3
 import docopt
@@ -14,12 +17,10 @@ import logging
 import subprocess
 import signal
 import socket
-from main import __version__
+from .__version__ import __version__
+
 
 logger = logging.getLogger(__name__)
-
-dotenv.load_dotenv()
-ec2 = boto3.resource('ec2')
 
 def test_socket(hostname, port):
     try:
@@ -31,7 +32,17 @@ def test_socket(hostname, port):
         return False
 
 def main():
+    dotenv.load_dotenv()
+    ec2 = boto3.resource('ec2')
+
     args = docopt.docopt(__doc__, version=__version__)
+
+    if args["--verbose"]:
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+    
+    logging.basicConfig(level=level, format="%(message)s")
 
     instance_id = args["<instance-id>"]
     lock_file_name = args["<lock-file>"]
@@ -40,26 +51,21 @@ def main():
     instance = ec2.Instance(instance_id)
 
     with open(lock_file_name, "w") as lock_file:
-        sys.stderr.write(f"Waiting for shared lock on '{lock_file_name}'...\n");
-        sys.stderr.flush()
+        logger.info(f"Waiting for shared lock on '{lock_file_name}'...");
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)
-        sys.stderr.write(f"Obtained lock on '{lock_file_name}'\n")
-        sys.stderr.flush()
+        logger.info(f"Obtained lock on '{lock_file_name}'")
 
         ip_address = instance.private_ip_address
 
         while test_socket(ip_address, backend_port) is False:
-            sys.stderr.write(f"Waiting for port {backend_port} on instance {instance_id} ({ip_address})...\n")
-            sys.stderr.flush()
+            logger.info(f"Waiting for port {backend_port} on instance {instance_id} ({ip_address})...")
             time.sleep(1)
 
-        sys.stderr.write(f"Connection worked, instance {instance_id} is now running\n")
-        sys.stderr.flush()
+        logger.info(f"Connection worked, instance {instance_id} is now running")
 
         proc = subprocess.run(["nc", "--", ip_address, str(backend_port)])
         status = proc.returncode
-        sys.stderr.write(f"nc exited with status code {status}\n")
-        sys.stderr.flush()
+        logger.info(f"nc exited with status code {status}")
 
         # This cooldown period is useful since often another connection will
         # connection will be made not long after this one has finished. Having
@@ -70,11 +76,9 @@ def main():
         # instances billed 'per-second' on AWS. This means that in the case of a
         # single short-lived connection, we make sure we use the full 60 seconds
         # worth of time that we already paid for to wait for new connections.
-        sys.stderr.write("Starting 60 second cooldown...\n")
-        sys.stderr.flush()
+        logger.info("Starting 60 second cooldown...")
         time.sleep(60)
-        sys.stderr.write("Cooldown finished, shutting down...\n")
-        sys.stderr.flush()
+        logger.info("Cooldown finished, shutting down...")
 
 
         exit(status)

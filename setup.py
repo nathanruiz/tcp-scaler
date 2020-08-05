@@ -1,5 +1,5 @@
 import setuptools
-from .tcp-scaler import __version__
+from tcp_scaler import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -22,7 +22,8 @@ setuptools.setup(
     python_requires='>=3.6',
     entry_points={
         "console_scripts": [
-            "tcp-scaler=tcp_scaler:main"
+            "tcp-scaler=tcp_scaler:main",
+            "tcp-scaler-forwarder=tcp_scaler:forwarder"
         ]
     },
     install_requires=[
