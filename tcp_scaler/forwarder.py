@@ -1,7 +1,7 @@
 """A TCP load-balancer that create backend EC2 instances on-demand.
 
 Usage:
-  forward-connection [-v] <instance-id> <lock-file> <backend-port>
+  tcp-scaler-forwarder [-v] <instance-id> <lock-file> <backend-port>
 
 Options:
   -v --verbose  Write extra state information to the console
