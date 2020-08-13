@@ -2,8 +2,38 @@
 This is a simple TCP proxy that starts an AWS EC2 instance when any number of
 clients exist, and then forward them to a backend instance when available.
 
+## Build ##
+These instructions have been tested on Debian 10.
+
+Installed the required packages:
+```
+apt-get install python3 python3-venv netcat
+```
+
+Set up a virtualenv environment:
+```
+python3 -m venv env
+. env/bin/activate
+pip install -r requirements.txt
+```
+
+Build the wheel:
+```
+pip install wheel
+python setup.py bdist_wheel
+```
+
+## Installing ##
+Copy the wheel to the desired system, and run the following to install:
+```
+apt-get install python3 python3-pip
+pip3 install <wheel>
+```
+
+The `tcp-scaler` and `tcp-scaler-forwarder` commands will now be available.
+
 ## Systemd service ##
-First install the socket activation file:
+Use the following to set up tcp-scaler as a service (tested under Debian 10):
 
 ```bash
 PORT=<frontend-port>
