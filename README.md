@@ -11,9 +11,7 @@ INSTANCE_ID=<instance-id>
 BACKEND_PORT=<backend-port>
 REGION=<aws-region>
 
-mkdir -p ~/.local/share/systemd/user/
-
-cat > ~/.local/share/systemd/user/tcp-scaler-forwarder-${INSTANCE_ID}-${BACKEND_PORT}.socket <<EOF
+cat > /lib/systemd/system/tcp-scaler-forwarder-${INSTANCE_ID}-${BACKEND_PORT}.socket <<EOF
 [Unit]
 Description=TCP forwarder component of tcp-scaler
 
@@ -25,7 +23,7 @@ Accept=yes
 WantedBy=sockets.target
 EOF
 
-cat > ~/.local/share/systemd/user/tcp-scaler-forwarder-${INSTANCE_ID}-${BACKEND_PORT}@.service <<EOF
+cat > /lib/systemd/system/tcp-scaler-forwarder-${INSTANCE_ID}-${BACKEND_PORT}@.service <<EOF
 [Unit]
 Description=TCP forwarder component of tcp-scaler
 Requires=tcp-scaler-forwarder-${INSTANCE_ID}-${BACKEND_PORT}.socket
@@ -42,20 +40,20 @@ TimeoutStopSec=5
 WantedBy=multi-user.target
 EOF
 
-cat > ~/.local/share/systemd/user/tcp-scaler-${INSTANCE_ID}-${BACKEND_PORT}.service <<EOF
+cat > /lib/systemd/system/tcp-scaler-${INSTANCE_ID}-${BACKEND_PORT}.service <<EOF
 [Unit]
 Description=Instance manager for tcp-scaler
 
 [Service]
 Type=simple
 Environment="AWS_DEFAULT_REGION=${REGION}"
-ExecStart=-tcp-scaler -v ${INSTANCE_ID} /tmp/tcp-scaler-${INSTANCE_ID}-${BACKEND_PORT}
+ExecStart=tcp-scaler -v ${INSTANCE_ID} /tmp/tcp-scaler-${INSTANCE_ID}-${BACKEND_PORT}
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-systemctl --user daemon-reload
-systemctl --user start tcp-scaler-${INSTANCE_ID}-${BACKEND_PORT}.service
-systemctl --user start tcp-scaler-forwarder-${INSTANCE_ID}-${BACKEND_PORT}.socket
+systemctl daemon-reload
+systemctl start tcp-scaler-${INSTANCE_ID}-${BACKEND_PORT}.service
+systemctl start tcp-scaler-forwarder-${INSTANCE_ID}-${BACKEND_PORT}.socket
 ```
