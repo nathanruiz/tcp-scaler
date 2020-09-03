@@ -63,7 +63,23 @@ def main():
 
         logger.info(f"Connection worked, instance {instance_id} is now running")
 
-        proc = subprocess.run(["nc", "--", ip_address, str(backend_port)])
+        proc = subprocess.Popen(["nc", "--", ip_address, str(backend_port)])
+
+        while True:
+            # Check if the process is done.
+            try:
+                if proc.wait(timeout=1) is not None:
+                    break
+            except subprocess.TimeoutExpired:
+                pass
+
+            # Verify the fds are still valid.
+            if sys.stdin.closed or sys.stdout.closed:
+                proc.terminate()
+                logger.info(f"nc terminated due to socket being closed")
+                break
+
+        proc.wait()
         status = proc.returncode
         logger.info(f"nc exited with status code {status}")
 
