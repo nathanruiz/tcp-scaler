@@ -1,10 +1,11 @@
 """A TCP load-balancer that create backend EC2 instances on-demand.
 
 Usage:
-  tcp-scaler-forwarder [-v] <instance-id> <lock-file> <backend-port>
+  tcp-scaler-forwarder [-ev] <instance-id> <lock-file> <backend-port>
 
 Options:
-  -v --verbose  Write extra state information to the console
+  -v --verbose   Write extra state information to the console
+  -e --external  Use the external address of a server rather than the internal
 """
 import boto3
 import docopt
@@ -47,6 +48,7 @@ def main():
     instance_id = args["<instance-id>"]
     lock_file_name = args["<lock-file>"]
     backend_port = int(args["<backend-port>"])
+    use_external_address = args["--external"]
 
     instance = ec2.Instance(instance_id)
 
@@ -55,8 +57,12 @@ def main():
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)
         logger.info(f"Obtained lock on '{lock_file_name}'")
 
-        ip_address = instance.private_ip_address
+        if use_external_address:
+            ip_address = instance.public_ip_address
+        else:
+            ip_address = instance.private_ip_address
 
+        logger.info(f"Attempting to connect to {instance_id} ({ip_address})...")
         while test_socket(ip_address, backend_port) is False:
             logger.info(f"Waiting for port {backend_port} on instance {instance_id} ({ip_address})...")
             time.sleep(1)
